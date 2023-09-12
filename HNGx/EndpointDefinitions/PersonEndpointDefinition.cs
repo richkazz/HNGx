@@ -2,8 +2,10 @@
 using HNGx.Constants;
 using HNGx.Data;
 using HNGx.Models;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Net;
 
 namespace HNGx.EndpointDefinitions
 {
@@ -11,86 +13,100 @@ namespace HNGx.EndpointDefinitions
     {
         public void RegisterEndpoints(WebApplication app)
         {
-            var auth = app.MapGroup("/api/Person").WithOpenApi();
+            var auth = app.MapGroup("/api").WithOpenApi();
 
             auth.MapGet("/get-all-persons", GetPersons)
-                
+                .Produces((int)HttpStatusCode.OK,typeof(List<Person>))
                 .WithOpenApi();
 
-            auth.MapGet("/", GetPersons)
+            auth.MapGet("/{id}", GetPersonById)
                 .WithName("GetPersonById")
                 .WithOpenApi();
 
-            auth.MapPost("/", PostPerson).
-                WithOpenApi();
+            auth.MapPost("/", PostPerson)
+                .AddEndpointFilter<PostPersonFilter>()
+                . WithOpenApi();
 
-            auth.MapPut("/", UpdatePerson).
-                WithOpenApi();
+            auth.MapPut("/", UpdatePerson)
+                .AddEndpointFilter<PutPersonFilter>()
+                .WithOpenApi();
 
-            auth.MapDelete("/", DeletePerson).
+            auth.MapDelete("/{id}", DeletePerson).
                     WithOpenApi();
         }
-
-        public async Task<ActionResult<IEnumerable<Person>>> GetPersons(HNGxDbContext dbContext)
+        [ProducesResponseType(typeof(List<Person>), StatusCodes.Status200OK)]
+        public async Task<IResult> GetPersons(HNGxDbContext dbContext)
         {
-            return await dbContext.Persons.ToListAsync();
+            var response = await dbContext.Persons.ToListAsync();
+            return TypedResults.Ok(response);
         }
-        public async Task<IResult> GetPersonById(HNGxDbContext dbContext, int id)
+        public async Task<Results<Ok<Person>, NotFound>> GetPersonById(HNGxDbContext dbContext, int id)
         {
-            if (id == 0)
-            {
-                return TypedResults.BadRequest(ErrorConstants.PERSON_ID_ERROR);
-            }
             var person = await dbContext.Persons.FindAsync(id);
-
             if (person == null)
             {
                 return TypedResults.NotFound();
             }
-
             return TypedResults.Ok(person);
         }
         public async Task<IResult> PostPerson(HNGxDbContext dbContext, PersonRequest personRequest)
         {
-            if(personRequest.Name == null)
-            {
-                return TypedResults.BadRequest(ErrorConstants.PERSON_NAME_ERROR);
-            }
             var person = new Person() { Name = personRequest.Name };
             dbContext.Persons.Add(person);
             await dbContext.SaveChangesAsync();
-
-            return Results.CreatedAtRoute("GetPersonById", new { person.Id }, person);
+            return Results.CreatedAtRoute("GetPersonById",new { person.Id},person);
         }
-        private async Task<IResult> UpdatePerson(HNGxDbContext dbContext, Person person)
+        private async Task<Results<Ok<Person>,NotFound>> UpdatePerson(HNGxDbContext dbContext, Person person)
         {
-            if (person.Name == null)
+            var per = await dbContext.Persons.FirstOrDefaultAsync(x => x.Id == person.Id);
+            if (per == null)
             {
-                return TypedResults.BadRequest(ErrorConstants.PERSON_NAME_ERROR);
+                return TypedResults.NotFound();
             }
-            else if(person.Id == 0)
-            {
-                return TypedResults.BadRequest(ErrorConstants.PERSON_ID_ERROR);
-            }
-            dbContext.Persons.Update(person);
+            per.Name = person.Name;
+            dbContext.Persons.Update(per);
             await dbContext.SaveChangesAsync();
             return TypedResults.Ok(person);
         }
-
-        private async Task<IResult> DeletePerson(HNGxDbContext dbContext, int id)
+       
+        private async Task<Results<Ok,NotFound>> DeletePerson(HNGxDbContext dbContext, int id)
         {
-            if(id == 0)
-            {
-                return TypedResults.BadRequest(ErrorConstants.PERSON_ID_ERROR);
-            }
             var person = await dbContext.Persons.FindAsync(id);
             if (person == null) 
             {
-                return TypedResults.Ok();
+                return TypedResults.NotFound();
             }
             dbContext.Persons.Remove(person);
             await dbContext.SaveChangesAsync();
             return TypedResults.Ok();
         }
     }
+    public class PostPersonFilter : IEndpointFilter
+    {
+        public async ValueTask<object?> InvokeAsync
+            (EndpointFilterInvocationContext context,
+            EndpointFilterDelegate next)
+        {
+            var personRequest = context.GetArgument<PersonRequest>(1);
+            if (string.IsNullOrWhiteSpace(personRequest.Name))
+                return await Task.FromResult(Results.BadRequest(ErrorConstants.PERSON_NAME_ERROR));
+
+            return await next(context);
+        }
+    }
+    public class PutPersonFilter : IEndpointFilter
+    {
+        public async ValueTask<object?> InvokeAsync
+            (EndpointFilterInvocationContext context,
+            EndpointFilterDelegate next)
+        {
+            var person = context.GetArgument<Person>(1);
+            if (string.IsNullOrWhiteSpace(person.Name))
+                return await Task.FromResult(Results.BadRequest(ErrorConstants.PERSON_NAME_ERROR));
+            else if(person.Id == 0)
+                return await Task.FromResult(Results.BadRequest(ErrorConstants.PERSON_ID_ERROR));
+            return await next(context);
+        }
+    }
 }
+
