@@ -56,7 +56,7 @@ namespace HNGx.EndpointDefinitions
             await dbContext.SaveChangesAsync();
             return Results.CreatedAtRoute("GetPersonById",new { person.Id},person);
         }
-        private async Task<Results<Ok<Person>,NotFound<ErrorResponse>>> UpdatePerson(HNGxDbContext dbContext, Person person,string id)
+        private async Task<Results<Ok<Person>,NotFound<ErrorResponse>>> UpdatePerson(HNGxDbContext dbContext, Person person, int id)
         {
             var per = await dbContext.Persons.FirstOrDefaultAsync(x => x.Id == person.Id);
             if (per == null)
