@@ -40,12 +40,12 @@ namespace HNGx.EndpointDefinitions
             var response = await dbContext.Persons.ToListAsync();
             return TypedResults.Ok(response);
         }
-        public async Task<Results<Ok<Person>, NotFound>> GetPersonById(HNGxDbContext dbContext, int id)
+        public async Task<Results<Ok<Person>, NotFound<ErrorResponse>>> GetPersonById(HNGxDbContext dbContext, int id)
         {
             var person = await dbContext.Persons.FindAsync(id);
             if (person == null)
             {
-                return TypedResults.NotFound();
+                return TypedResults.NotFound(new ErrorResponse(ErrorConstants.PERSON_NOT_FOUND_ERROR));
             }
             return TypedResults.Ok(person);
         }
@@ -56,12 +56,12 @@ namespace HNGx.EndpointDefinitions
             await dbContext.SaveChangesAsync();
             return Results.CreatedAtRoute("GetPersonById",new { person.Id},person);
         }
-        private async Task<Results<Ok<Person>,NotFound>> UpdatePerson(HNGxDbContext dbContext, Person person)
+        private async Task<Results<Ok<Person>,NotFound<ErrorResponse>>> UpdatePerson(HNGxDbContext dbContext, Person person)
         {
             var per = await dbContext.Persons.FirstOrDefaultAsync(x => x.Id == person.Id);
             if (per == null)
             {
-                return TypedResults.NotFound();
+                return TypedResults.NotFound(new ErrorResponse(ErrorConstants.PERSON_NOT_FOUND_ERROR));
             }
             per.Name = person.Name;
             dbContext.Persons.Update(per);
@@ -69,12 +69,12 @@ namespace HNGx.EndpointDefinitions
             return TypedResults.Ok(person);
         }
        
-        private async Task<Results<Ok,NotFound>> DeletePerson(HNGxDbContext dbContext, int id)
+        private async Task<Results<Ok,NotFound<ErrorResponse>>> DeletePerson(HNGxDbContext dbContext, int id)
         {
             var person = await dbContext.Persons.FindAsync(id);
             if (person == null) 
             {
-                return TypedResults.NotFound();
+                return TypedResults.NotFound(new ErrorResponse(ErrorConstants.PERSON_NOT_FOUND_ERROR));
             }
             dbContext.Persons.Remove(person);
             await dbContext.SaveChangesAsync();
@@ -89,7 +89,7 @@ namespace HNGx.EndpointDefinitions
         {
             var personRequest = context.GetArgument<PersonRequest>(1);
             if (string.IsNullOrWhiteSpace(personRequest.Name))
-                return await Task.FromResult(Results.BadRequest(ErrorConstants.PERSON_NAME_ERROR));
+                return await Task.FromResult(Results.BadRequest(new ErrorResponse(ErrorConstants.PERSON_NAME_ERROR)));
 
             return await next(context);
         }
@@ -102,11 +102,19 @@ namespace HNGx.EndpointDefinitions
         {
             var person = context.GetArgument<Person>(1);
             if (string.IsNullOrWhiteSpace(person.Name))
-                return await Task.FromResult(Results.BadRequest(ErrorConstants.PERSON_NAME_ERROR));
+                return await Task.FromResult(Results.BadRequest(new ErrorResponse(ErrorConstants.PERSON_NAME_ERROR)));
             else if(person.Id == 0)
-                return await Task.FromResult(Results.BadRequest(ErrorConstants.PERSON_ID_ERROR));
+                return await Task.FromResult(Results.BadRequest(new ErrorResponse(ErrorConstants.PERSON_ID_ERROR)));
             return await next(context);
         }
+    }
+    public class ErrorResponse
+    {
+       public  ErrorResponse(string error)
+       {
+            Error = error;
+       }
+       public string Error { get; set; }
     }
 }
 
