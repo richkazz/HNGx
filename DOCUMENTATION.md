@@ -137,4 +137,4 @@ The base URL for this API is `https://karoedaware-hngx.onrender.com/api`.
   }
   ```
   **PS swagger link:** https://karoedaware-hngx.onrender.com/swagger/index.html
-  **Class Diagram:** [Class Diagram ](HNGxClassDiagram.png)
+  **Class Diagram:** refer to this [Class Diagram ](HNGxClassDiagram.png)
