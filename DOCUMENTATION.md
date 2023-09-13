@@ -136,4 +136,5 @@ The base URL for this API is `https://karoedaware-hngx.onrender.com/api`.
     "error": "Person not found."
   }
   ```
-  **PS swagger link:** https://karoedaware-hngx.onrender.com/swagger/index.html 
+  **PS swagger link:** https://karoedaware-hngx.onrender.com/swagger/index.html
+  **Class Diagram:** [Class Diagram ](HNGxClassDiagram.png)
