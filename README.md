@@ -2,7 +2,7 @@
 
 ### Base URL
 
-The base URL for this API is `/api`.
+The base URL for this API is `https://karoedaware-hngx.onrender.com/api`.
 
 ### Endpoints
 
@@ -85,7 +85,7 @@ The base URL for this API is `/api`.
 
 #### 4. Update an Existing Person
 
-- **URL**: `/`
+- **URL**: `/{id}`
 - **HTTP Method**: PUT
 - **Description**: Updates an existing person.
 - **Parameters**:
