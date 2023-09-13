@@ -27,7 +27,7 @@ namespace HNGx.EndpointDefinitions
                 .AddEndpointFilter<PostPersonFilter>()
                 . WithOpenApi();
 
-            auth.MapPut("/", UpdatePerson)
+            auth.MapPut("/{id}", UpdatePerson)
                 .AddEndpointFilter<PutPersonFilter>()
                 .WithOpenApi();
 
@@ -56,7 +56,7 @@ namespace HNGx.EndpointDefinitions
             await dbContext.SaveChangesAsync();
             return Results.CreatedAtRoute("GetPersonById",new { person.Id},person);
         }
-        private async Task<Results<Ok<Person>,NotFound<ErrorResponse>>> UpdatePerson(HNGxDbContext dbContext, Person person)
+        private async Task<Results<Ok<Person>,NotFound<ErrorResponse>>> UpdatePerson(HNGxDbContext dbContext, Person person,string id)
         {
             var per = await dbContext.Persons.FirstOrDefaultAsync(x => x.Id == person.Id);
             if (per == null)
@@ -101,9 +101,12 @@ namespace HNGx.EndpointDefinitions
             EndpointFilterDelegate next)
         {
             var person = context.GetArgument<Person>(1);
+            var id = context.GetArgument<int>(2);
             if (string.IsNullOrWhiteSpace(person.Name))
                 return await Task.FromResult(Results.BadRequest(new ErrorResponse(ErrorConstants.PERSON_NAME_ERROR)));
             else if(person.Id == 0)
+                return await Task.FromResult(Results.BadRequest(new ErrorResponse(ErrorConstants.PERSON_ID_ERROR)));
+            else if(person.Id != id)
                 return await Task.FromResult(Results.BadRequest(new ErrorResponse(ErrorConstants.PERSON_ID_ERROR)));
             return await next(context);
         }
