@@ -23,7 +23,7 @@ To run this project locally or deploy it on your own server, follow these steps:
 
    ```bash
    git clone https://github.com/richkazz/HNGx.git
-   cd HNGx-Backend-Project-2
+   cd HNGx
    ```
 
 4. **Build and Run Locally:**
