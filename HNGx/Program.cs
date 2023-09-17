@@ -6,7 +6,7 @@ var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
 var connectionString = Environment.GetEnvironmentVariable("CONNECTION_STRING");
 builder.Services.AddDbContext<HNGxDbContext>(options =>
-    options.UseNpgsql(connectionString ?? configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql( configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
